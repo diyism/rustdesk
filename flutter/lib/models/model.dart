@@ -1843,6 +1843,7 @@ class ImageModel with ChangeNotifier {
   WeakReference<FFI> parent;
 
   final List<Function(String)> callbacksOnFirstImage = [];
+  bool _loggedRgbaProbe = false;
 
   ImageModel(this.parent) {
     sessionId = parent.target!.sessionId;
@@ -1887,6 +1888,28 @@ class ImageModel with ChangeNotifier {
   decodeAndUpdate(int display, Uint8List rgba) async {
     final pid = parent.target?.id;
     final rect = parent.target?.ffiModel.pi.getDisplayRect(display);
+    assert(() {
+      if (!_loggedRgbaProbe) {
+        _loggedRgbaProbe = true;
+        final sampleLen = min(rgba.length, 1024);
+        var rgbNonZero = 0;
+        var alphaZero = 0;
+        var alphaFull = 0;
+        for (var i = 0; i + 3 < sampleLen; i += 4) {
+          if (rgba[i] != 0 || rgba[i + 1] != 0 || rgba[i + 2] != 0) {
+            rgbNonZero++;
+          }
+          if (rgba[i + 3] == 0) {
+            alphaZero++;
+          } else if (rgba[i + 3] == 255) {
+            alphaFull++;
+          }
+        }
+        debugPrint(
+            'RGBA probe display=$display width=${rect?.width} height=${rect?.height} len=${rgba.length} samplePixels=${sampleLen ~/ 4} rgbNonZero=$rgbNonZero alphaZero=$alphaZero alphaFull=$alphaFull first16=${rgba.take(16).toList()}');
+      }
+      return true;
+    }());
     final image = await img.decodeImageFromPixels(
       rgba,
       rect?.width.toInt() ?? 0,

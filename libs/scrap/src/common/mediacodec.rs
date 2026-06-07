@@ -159,6 +159,14 @@ fn create_media_codec(name: &str, direction: MediaCodecDirection) -> Option<Medi
 }
 
 pub fn check_mediacodec() {
+    #[cfg(target_arch = "x86")]
+    {
+        log::info!("Disable Android MediaCodec on x86; release android-x86 is unsupported and decoder output formats are unreliable");
+        H264_DECODER_SUPPORT.swap(false, Ordering::SeqCst);
+        H265_DECODER_SUPPORT.swap(false, Ordering::SeqCst);
+        return;
+    }
+
     std::thread::spawn(move || {
         // check decoders
         let decoders = MediaCodecDecoder::new_decoders();
