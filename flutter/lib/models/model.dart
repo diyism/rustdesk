@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi' as dart_ffi;
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -1888,6 +1889,12 @@ class ImageModel with ChangeNotifier {
   decodeAndUpdate(int display, Uint8List rgba) async {
     final pid = parent.target?.id;
     final rect = parent.target?.ffiModel.pi.getDisplayRect(display);
+    final pixelFormat = isAndroid &&
+            dart_ffi.Abi.current() == dart_ffi.Abi.androidIA32
+        ? ui.PixelFormat.rgba8888
+        : (isWeb | isWindows | isLinux
+            ? ui.PixelFormat.rgba8888
+            : ui.PixelFormat.bgra8888);
     assert(() {
       if (!_loggedRgbaProbe) {
         _loggedRgbaProbe = true;
@@ -1906,7 +1913,7 @@ class ImageModel with ChangeNotifier {
           }
         }
         debugPrint(
-            'RGBA probe display=$display width=${rect?.width} height=${rect?.height} len=${rgba.length} samplePixels=${sampleLen ~/ 4} rgbNonZero=$rgbNonZero alphaZero=$alphaZero alphaFull=$alphaFull first16=${rgba.take(16).toList()}');
+            'RGBA probe display=$display width=${rect?.width} height=${rect?.height} len=${rgba.length} pixelFormat=$pixelFormat samplePixels=${sampleLen ~/ 4} rgbNonZero=$rgbNonZero alphaZero=$alphaZero alphaFull=$alphaFull first16=${rgba.take(16).toList()}');
       }
       return true;
     }());
@@ -1914,9 +1921,7 @@ class ImageModel with ChangeNotifier {
       rgba,
       rect?.width.toInt() ?? 0,
       rect?.height.toInt() ?? 0,
-      isWeb | isWindows | isLinux
-          ? ui.PixelFormat.rgba8888
-          : ui.PixelFormat.bgra8888,
+      pixelFormat,
     );
     if (parent.target?.id != pid) return;
     await update(image);
