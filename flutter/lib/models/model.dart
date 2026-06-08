@@ -1889,8 +1889,10 @@ class ImageModel with ChangeNotifier {
   decodeAndUpdate(int display, Uint8List rgba) async {
     final pid = parent.target?.id;
     final rect = parent.target?.ffiModel.pi.getDisplayRect(display);
-    final pixelFormat = isAndroid &&
-            dart_ffi.Abi.current() == dart_ffi.Abi.androidIA32
+    final isAndroidX86 =
+        isAndroid && dart_ffi.Abi.current() == dart_ffi.Abi.androidIA32;
+    final pixels = isAndroidX86 ? _bgraToRgba(rgba) : rgba;
+    final pixelFormat = isAndroidX86
         ? ui.PixelFormat.rgba8888
         : (isWeb | isWindows | isLinux
             ? ui.PixelFormat.rgba8888
@@ -1918,13 +1920,23 @@ class ImageModel with ChangeNotifier {
       return true;
     }());
     final image = await img.decodeImageFromPixels(
-      rgba,
+      pixels,
       rect?.width.toInt() ?? 0,
       rect?.height.toInt() ?? 0,
       pixelFormat,
     );
     if (parent.target?.id != pid) return;
     await update(image);
+  }
+
+  Uint8List _bgraToRgba(Uint8List bgra) {
+    final rgba = Uint8List.fromList(bgra);
+    for (var i = 0; i + 3 < rgba.length; i += 4) {
+      final b = rgba[i];
+      rgba[i] = rgba[i + 2];
+      rgba[i + 2] = b;
+    }
+    return rgba;
   }
 
   update(ui.Image? image) async {
