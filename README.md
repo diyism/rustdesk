@@ -1,3 +1,7 @@
+    rustdesk for android x86: https://github.com/diyism/rustdesk/releases/tag/android-x86-debug3
+
+==============================================
+
 <p align="center">
   <img src="res/logo-header.svg" alt="RustDesk - Your remote desktop"><br>
   <a href="#raw-steps-to-build">Build</a> •
